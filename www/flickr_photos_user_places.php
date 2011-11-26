@@ -27,8 +27,6 @@
 	$GLOBALS['smarty']->assign_by_ref("owner", $owner);
 	$GLOBALS['smarty']->assign("is_own", $is_own);
 
-	# TO DO: check to see if facet is apssed in as a q uery param
-
 	$facet = get_str("facet");
 
 	$placetypes = flickr_places_valid_placetypes();
@@ -38,16 +36,12 @@
 		$facet = $placetypes[$rand - 1];
 	}
 
-	$mincount = 20;
-
 	$GLOBALS['smarty']->assign_by_ref("placetypes", $placetypes);
 	$GLOBALS['smarty']->assign("facet", $facet);
-	$GLOBALS['smarty']->assign("mincount", $mincount);
 
 	#
 
 	$more = array(
-		'mincount' => $mincount,
 		'viewer_id' => $GLOBALS['cfg']['user']['id'],
 	);
 
@@ -70,8 +64,6 @@
 
 		$GLOBALS['smarty']->assign("error", $rsp['error']);
 	}
-
-	# TO DO: pull in places without lots of photos
 
 	$GLOBALS['smarty']->display("page_flickr_photos_user_places.txt");
 	exit();
