@@ -22,12 +22,32 @@
 
 	#
 
+	$page = get_int32("page");
 	$more = array(
-		'page' => get_int32("page"),
+		'page' => $page,
 		'viewer_id' => $GLOBALS['cfg']['user']['id'],
 	);
 
-	$with = get_int64('with');
+	# Due to the htaccess rule, this will always have 'ago' at the end
+	if ($ago_str = get_str('ago_str')) {
+
+		$ago_str = substr($ago_str, 0, -3);
+		$timestamp = strtotime("-$page $ago_str");
+
+		$with = false;
+
+		if ($timestamp && $timestamp > 0) {
+			$with = flickr_photos_first_before_timestamp($owner, $timestamp);
+		} 
+		
+		if (!$with) {
+			error_404();
+		}
+
+	} else {
+		$with = get_int64('with');
+	}
+
 	if ($with) {
 		$more['with'] = $with;
 	}

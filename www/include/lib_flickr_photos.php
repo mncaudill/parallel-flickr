@@ -172,6 +172,43 @@
 	}
 
 	#################################################################
+	
+	function flickr_photos_first_before_timestamp(&$user, $timestamp, $more=array()) {
+
+		$defaults = array(
+			'viewer_id' => 0,
+		);
+
+		$more = array_merge($defaults, $more);
+
+		$cluster_id = $user['cluster_id'];
+		$enc_user = AddSlashes($user['id']);
+
+		$extra = array();
+
+		if ($perms = flickr_photos_permissions_photos_where($user['id'], $more['viewer_id'])){
+			$str_perms = implode(",", $perms);
+			$extra[] = "perms IN ({$str_perms})";
+		}
+
+		$extra[] = "dateupload <= FROM_UNIXTIME($timestamp)";
+
+		$extra = implode(" AND ", $extra);
+
+		if (strlen($extra)){
+			$extra = " AND {$extra}";
+		}
+
+		# Question!! dateupload is not super useful here, as this is a 'what was I doing 1 year ago?' versus
+		# 'what did I upload 1 year ago?' Is this right? Do we need both?
+		$sql = "SELECT id FROM FlickrPhotos WHERE user_id='{$enc_user}' {$extra} ORDER BY datetaken DESC LIMIT 1";
+
+		$row = db_single(db_fetch_users($cluster_id, $sql));
+
+		return $row ? $row['id'] : false;
+	}
+
+	#################################################################
 
 	function flickr_photos_for_user(&$user, $more=array()){
 
