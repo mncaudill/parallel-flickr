@@ -191,7 +191,7 @@
 			$extra[] = "perms IN ({$str_perms})";
 		}
 
-		$extra[] = "dateupload <= FROM_UNIXTIME($timestamp)";
+		$extra[] = "datetaken <= FROM_UNIXTIME($timestamp)";
 
 		$extra = implode(" AND ", $extra);
 
