@@ -28,11 +28,11 @@
 		'viewer_id' => $GLOBALS['cfg']['user']['id'],
 	);
 
-	# Due to the htaccess rule, this will always have 'ago' at the end
-	if ($ago_str = get_str('ago_str')) {
+	if ($ago = get_str('ago')) {
 
-		$ago_str = substr($ago_str, 0, -3);
-		$timestamp = strtotime("-$page $ago_str");
+		# Due to the htaccess rule, we know that this will 'some number' then 'some letters'
+		preg_match('#^([0-9]+)(.+)$#', $ago, $matches);
+		$timestamp = strtotime("-{$matches[1]} {$matches[2]}");
 
 		$with = false;
 

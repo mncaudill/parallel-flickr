@@ -93,7 +93,8 @@ RewriteRule ^photos/friends/activity(/([a-z_]+))?/?$			flickr_photos_friends_act
 RewriteRule ^photos/friends/faves(/page([0-9]+))?/?$			flickr_photos_friends_faves.php?page=$2&%{QUERY_STRING} [L]
 
 RewriteRule ^photos/(([0-9a-zA-Z-_]+)|([0-9]+@N[0-9]+))/activity/?$		flickr_photos_user_recent_activity.php?path=$2&nsid=$3&%{QUERY_STRING} [L]
-RewriteRule ^photos/(([0-9a-zA-Z-_]+)|([0-9]+@N[0-9]+))(/page([0-9]+)([a-z]+ago)?)?/?$	flickr_photos_user.php?path=$2&nsid=$3&page=$5&ago_str=$6%{QUERY_STRING} [L]
+RewriteRule ^photos/(([0-9a-zA-Z-_]+)|([0-9]+@N[0-9]+))/([0-9]+[a-z]+)ago/?$	flickr_photos_user.php?path=$2&nsid=$3&ago=$4%{QUERY_STRING} [L]
+RewriteRule ^photos/(([0-9a-zA-Z-_]+)|([0-9]+@N[0-9]+))(/page([0-9]+))?/?$	flickr_photos_user.php?path=$2&nsid=$3&page=$5&%{QUERY_STRING} [L]
 RewriteRule ^photos/(([0-9a-zA-Z-_]+)|([0-9]+@N[0-9]+))/with/([0-9]+)/?$	flickr_photos_user.php?path=$2&nsid=$3&with=$4&%{QUERY_STRING} [L]
 
 RewriteRule ^buddyicon/([0-9]+@N[0-9]+).jpg$ 					flickr_buddyicon.php?nsid=$1 [L]
