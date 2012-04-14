@@ -494,3 +494,26 @@ td {
 button a {
     text-decoration: none;
 }
+
+@media (max-width: 480px) {
+	.photo {
+		width: auto;
+	}
+
+	.photo_map,
+	.photo_sidebar {
+		float: none;
+		width: 100%;
+	}
+
+	.photo img {
+		max-width: 100%;
+	}
+
+	.map {
+		width: 100%;
+		height: 100px;
+	}
+
+}
+

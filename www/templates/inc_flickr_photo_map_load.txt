@@ -2,6 +2,9 @@
 <script type="text/javascript">
 {literal}
 	$(document).ready(function(){
+		if(!('ontouchstart' in document.documentElement)) {
+			$('div.map').attr('data-mousezoom', 0);	
+		}
 		$("div.map").htmapl();
 	});
 {/literal}
