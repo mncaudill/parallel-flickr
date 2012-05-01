@@ -153,6 +153,7 @@ function cwf_init_shortcuts(){
 			cwf_show_photo((photos.length - 1));
 		};
 
+	
 		$(document).keydown(function(e){
 
 		if (e.keyCode == 37){
@@ -171,7 +172,13 @@ function cwf_init_shortcuts(){
 			down();
 		}
 
-		else {}
+		else if (e.keyCode == 80){
+			cwf_toggle_pixel_mode(e.shiftKey);
+		}
+
+		else {
+			/* console.log(e); */
+		}
 	});
 
 	// http://www.netcu.de/jquery-touchwipe-iphone-ipad-library
@@ -231,6 +238,8 @@ function _cwf_check_photos_callback(rsp){
 	var new_photos = rsp['photos'];
 	var count_photos = new_photos.length;
 
+	/* console.log('pre: p:' + count_photos + ' u:' + count_updates); */
+
 	if (count_photos){
 
 		new_photos.reverse();
@@ -266,7 +275,7 @@ function _cwf_check_photos_callback(rsp){
 
 		var msg = "<a href=\"#\" onclick=\"cwf_show_photo(0);return false;\">";
 
-		/* msg += 'p:' + count_photos + ' u:' + count_updates + ' '; */
+		/* console.log('post: p:' + count_photos + ' u:' + count_updates); */
 		
 		if (count_updates > 1){
 			msg += "there are " + count_updates + " new faves";
@@ -402,4 +411,64 @@ function cwf_show_photo(index){
 
 	$.backstretch(thumb);
 	$("#cwf_about").html(msg);
+}
+
+function cwf_toggle_pixel_mode(do_fullscreen){
+
+	var a = $("#cwf_about");
+	var f = $("#footer");
+
+	if (a.css("display") == "none"){
+		a.show();
+		f.show();
+
+		cwf_cancel_fullscreen();
+	}
+
+	else {
+		a.hide();
+		f.hide();
+
+		if (do_fullscreen){
+		    cwf_set_fullscreen();		    
+		}
+	}
+}	
+
+/* https://hacks.mozilla.org/2012/01/using-the-fullscreen-api-in-web-browsers/ */
+
+function cwf_set_fullscreen(el){
+
+	if (! el){
+		el = document.body;
+	}
+
+	if (el.requestFullscreen){
+		el.requestFullscreen();
+	}
+
+	else if (el.mozRequestFullScreen){
+		el.mozRequestFullScreen();
+	}
+
+	else if (el.webkitRequestFullScreen){
+		el.webkitRequestFullScreen();
+	}
+}
+
+function cwf_cancel_fullscreen(){
+
+	var el = document;
+
+	if (el.exitFullscreen){
+		el.exitFullscreen();
+	}
+
+	else if (el.mozCancelFullScreen){
+		el.mozCancelFullScreen();
+	}
+
+	else if (el.webkitCancelFullScreen){
+		el.webkitCancelFullScreen();
+	}
 }
