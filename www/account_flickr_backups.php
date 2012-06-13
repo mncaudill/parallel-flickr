@@ -28,9 +28,7 @@
 		}
 	}
 
-	if (! $GLOBALS['cfg']['enable_feature_backups']){
-		error_disabled();
-	}
+	features_ensure_enabled("backups");
 
 	$map = flickr_backups_type_map('string keys');
 	$GLOBALS['smarty']->assign_by_ref("map", $map);
@@ -45,14 +43,20 @@
 		if (post_str("setup")){
 
 			$created = array();
+			$details = array();
 
 			foreach ($map as $ignore => $type_id){
 
 				$rsp = flickr_backups_create($GLOBALS['cfg']['user'], $type_id);
 				$created[$type_id] = (($rsp['ok']) || ($rsp['error_code'] == 1062)) ? 1 : 0;
+
+				$rsp['type_id'] = $type_id;
+				$details[] = $rsp;
 			}
 
 			$GLOBALS['smarty']->assign_by_ref("created", $created);
+			$GLOBALS['smarty']->assign_by_ref("created_details", $details);
+
 			$backups = flickr_backups_for_user($GLOBALS['cfg']['user']);
 		}
 
@@ -61,14 +65,29 @@
 			if ((isset($map[$type])) && (isset($backups[$type]))){
 			
 				$backup = $backups[$type];
-				$disabled = (post_str('action') == 'stop') ? 1 : 0;
-				$update = array('disabled' => $disabled);
+				$action = post_str("action");
+				$context = post_str("context");
 
-				$rsp = flickr_backups_update($backup, $update);
+				if ($context=="push"){
+
+					$enabled = ($action == 'start') ? 1 : 0;
+					$rsp = flickr_backups_toggle_push_subscription($backup, $enabled);
+				}
+
+				else {
+					$disabled = ($action == 'stop') ? 1 : 0;
+					$update = array('disabled' => $disabled);
+
+					$rsp = flickr_backups_update($backup, $update);
+				}
 
 				if ($rsp['ok']){
 					$backups = flickr_backups_for_user($GLOBALS['cfg']['user']);
 				}
+
+				$rsp['action'] = $action;
+				$rsp['context'] = $context;
+				$GLOBALS['smarty']->assign_by_ref("update_rsp", $rsp);
 			}
 		}
 
@@ -78,6 +97,6 @@
 
 	$GLOBALS['smarty']->assign_by_ref("backups", $backups);
 
-	$GLOBALS['smarty']->display("page_account_backups.txt");
+	$GLOBALS['smarty']->display("page_account_flickr_backups.txt");
 	exit();
 ?>

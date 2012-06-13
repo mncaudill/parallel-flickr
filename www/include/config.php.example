@@ -116,11 +116,12 @@
 	# enable/configure it below.
 
 	# The 'flickr_static_url/path' flags needs to match the Alias directive
-	# in your Apache config. See also:
-	# https://github.com/straup/parallel-flickr/blob/master/apache/parallel-flickr.conf.example
+	# in your Apache config. Not that the 'flickr_static_url' config is a
+	# relative path; relative to the root URL which is assigned separately.
+	# See also: https://github.com/straup/parallel-flickr/blob/master/apache/parallel-flickr.conf.example
 
 	$GLOBALS['cfg']['flickr_static_path'] = "TWEAK ME";
-	$GLOBALS['cfg']['flickr_static_url'] = $GLOBALS['cfg']['abs_root_url'] . "static/";
+	$GLOBALS['cfg']['flickr_static_url'] = "static/";
 
 	# If you want to store your photos (and metadata) using Amazon's S3
 	# service you'll need to enable this feature flag and fill in the
@@ -150,6 +151,20 @@
 	$GLOBALS['cfg']['flickr_push_enable_photos_friends_faves'] = 1;
 	$GLOBALS['cfg']['flickr_push_enable_photos_recent_activity'] = 0;
 	$GLOBALS['cfg']['flickr_push_notification_email'] = '';	
+
+	# This is off by default because it requires that you ensure that
+	# the directory specified in $GLOBALS['cfg']['flickr_static_path']
+	# is both:
+	# 
+	# Writeable by the web server and that whichever users who may run
+	# the bin/backup_*.php scripts are in a shared (unix) group with
+	# the web server user account.
+	#
+	# If you are already storing your photos using Amazon's S3 service
+	# (see above) then you don't need to worry about these unix-specific
+	# permissions issues.
+
+	$GLOBALS['cfg']['enable_feature_flickr_push_backups'] = 0;
 
 	#
 	# Things you may want to tweak (Solr)
@@ -219,6 +234,12 @@
 
 	$GLOBALS['cfg']['user'] = null;
 
+	# This is only relevant if are running parallel-flickr on a machine where you
+	# can not make the www/templates_c folder writeable by the web server. If that's
+	# the case set this to 0 but understand that you'll need to pre-compile all
+	# of your templates before they can be used by the site.
+	# See also: https://github.com/straup/parallel-flickr/blob/master/bin/compile-templates.php
+
 	$GLOBALS['cfg']['smarty_compile'] = 1;
 
 	$GLOBALS['cfg']['http_timeout'] = 3;
@@ -230,7 +251,7 @@
 	$GLOBALS['cfg']['pagination_assign_smarty_variable'] = 1;
 	$GLOBALS['cfg']['pagination_per_page'] = 10;
 	$GLOBALS['cfg']['pagination_spill'] = 2;
-	$GLOBALS['cfg']['pagination_style'] = 'plain';
+	$GLOBALS['cfg']['pagination_style'] = 'pretty';
 
 	#
 	# enable this flag to show a full call chain (instead of just the
