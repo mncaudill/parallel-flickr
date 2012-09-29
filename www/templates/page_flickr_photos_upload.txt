@@ -1,0 +1,82 @@
+{capture assign="page_title"}upload{/capture}
+{include file="inc_head.txt"}
+
+<h2>Upload a photo</h2>
+
+{if !$is_registered}
+
+<p>Sorry. This feature is only available to registered <q>backup</q> users of
+the site.</p>
+
+{elseif !$can_upload}
+
+<p>Okay, you're almost ready to upload photos to Flickr. By default
+<strong>{$cfg.site_name|escape}</strong> only needs to have an authentication
+token for your Flickr account ({$cfg.user.username|escape}) with <q>read</q>
+permissions. In order to upload photos we'll need to bounce you back through the
+Flickr website site so you can confirm that you're okay with
+<strong>{$cfg.site_name|escape}</strong> uploading photos on your behalf.</p>
+
+<p><a href="{$cfg.abs_root_url}account/flickr/auth?perms=write&redir=/photos/upload">Get started.</a></p>
+
+{else}
+
+<form id="upload" method="POST" enctype="multipart/form-data">
+	<input type="file" name="photo" id="photo" data-crumb="{$crumb|escape}" />
+	<input type="submit" value="UPLOAD" />
+</form>
+
+{/if}
+
+<script type="text/javascript">
+{literal}
+
+$(document).ready(function(){
+
+	$("#upload").submit(function(){
+
+		var data = new FormData();
+		data.append("method", "flickr.photos.upload");
+
+		var crumb = $("#photo").attr("data-crumb");
+		data.append("crumb", crumb);
+
+		/* sudo account for multiple photos... */
+
+		try {
+			var photos = $("#photo");
+			var files = photos = photos[0].files;
+			data.append('photo', files[0]);
+		}
+
+		catch(e){
+			console.log(e);
+			return false;
+		}
+
+		$.ajax({
+			url: "/api",
+			type: "POST",
+			data: data,
+			cache: false,
+			contentType: false,
+			processData: false,
+			dataType: "json",
+			error: function(rsp){
+				console.log(rsp);
+			},
+			success: function(rsp){
+				console.log(rsp);
+				$('input[type=submit]').removeAttr('disabled');
+			}
+		});
+
+		$('input[type=submit]').attr('disabled', 'disabled');
+		return false;
+	});
+});
+
+{/literal}
+</script>
+
+{include file="inc_foot.txt"}

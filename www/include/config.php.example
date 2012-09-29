@@ -63,6 +63,55 @@
 	$GLOBALS['cfg']['enable_feature_backups'] = 1;
 	$GLOBALS['cfg']['backups_enable_registrations'] = 1;
 
+
+	# Uploads
+
+	$GLOBALS['cfg']['enable_feature_uploads'] = 0;
+
+	# OAuth Echo Upload (think custom image backend for Twitter clients like tweetbot)
+	# This URL is handy to get the twitter user_id: http://www.idfromuser.com/
+	# Also, some day this should be a user settings page. Some day.
+
+	$GLOBALS['cfg']['enable_feature_oauth_upload'] = 0;
+	$GLOBALS['cfg']['oauth_upload_user_mapping'] = array(
+		// twitter user_id => p-flickr user_id
+	);
+
+	# store files locally (and in the database) as they are uploaded
+	# to flickr; note that you will need to ensure that Apache has
+	# write permissions on 	$GLOBALS['cfg']['flickr_static_path']
+	# (unless you're using S3 for storing photos)
+
+	$GLOBALS['cfg']['enable_feature_uploads_archive'] = 0;
+
+	# If true this will add a 'uploaded:by=parallel-flickr' machine
+	# tag to all photos uploaded to flickr
+
+	$GLOBALS['cfg']['enable_feature_uploads_shoutout'] = 0;
+
+	# Note: setting up and configuring a mail server is left to
+	# the individual. The bin/upload_by_email.php script expects
+	# to be handd a MIME compatible email message on STDIN; see
+	# also sample postfix config files in the postfix directory
+
+	$GLOBALS['cfg']['enable_feature_uploads_by_email'] = 0;
+	$GLOBALS['cfg']['uploads_by_email_hostname'] = '';
+
+	# 1048576 is 1MB; web based upload sizes are controled by the
+	# 'upload_max_filesize' directive in www/.htaccess
+
+	$GLOBALS['cfg']['uploads_by_email_maxbytes'] = 1048576 * 5;
+
+	$GLOBALS['cfg']['enable_feature_uploads_filtr'] = 0;
+
+	$GLOBALS['cfg']['filtr_valid_filtrs'] = array(
+		'dazd',
+		'postr',
+		'postcrd',
+		'pxl',
+		'rockstr'
+	);
+
 	# Invite codes – these are used to limit who can register
 	# to have their photos backed up. You'll need to do a
 	# few things to enable this:

@@ -31,6 +31,11 @@ php_value short_open_tag on
 
 php_flag display_errors on
 
+# See also: $GLOBALS['cfg']['uploads_by_email_maxbytes']
+# I would like to find a way to sync these two things...
+
+php_value upload_max_filesize 5M
+
 # this sets all current and future error flags on, except for E_NOTICE
 # which can go fuck itself. we have some separate code for checking the
 # one notice we do care about.
@@ -71,6 +76,9 @@ RewriteRule  ^account/delete/?$		account_delete.php	[L]
 RewriteRule  ^account/url/?$			account_path_aliases.php		[L]
 RewriteRule  ^account/path_alias(es)?/?$	account_path_aliases.php		[L]
 
+
+RewriteRule  ^account/uploadbyemail/?$		account_uploadbyemail.php		[L]
+
 RewriteRule  ^account/backups/?$	/account/flickr/backups/		[R]
 RewriteRule  ^account/flickr/backups/?$	account_flickr_backups.php		[L]
 
@@ -83,7 +91,13 @@ RewriteRule  ^api/methods/?$		api_methods.php	[L]
 RewriteRule  ^api/methods/(.*)/?$	api_method.php?method=$1&%{QUERY_STRING}		[L]
 RewriteRule  ^api/rest/(.*)/?$		api_rest.php?method=$1&%{QUERY_STRING}		[L]
 
+# Misc
+
+RewriteRule ^photos/upload/oauthecho/?$			flickr_photos_upload_oauth_echo.php [L]
+
 # Flickr stuff
+
+RewriteRule ^photos/upload/?$			flickr_photos_upload.php?%{QUERY_STRING} [L] 
 
 RewriteRule ^photo.gne$							flickr_photo.php?%{QUERY_STRING} [L]
 

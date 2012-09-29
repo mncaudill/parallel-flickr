@@ -89,6 +89,7 @@
 		if ($_photo = flickr_photos_get_by_id($photo['id'])){
 
 			log_info("update photo {$photo['id']}");
+
 			# TO DO: make this less stupid...
 
 			unset($photo['id']);
@@ -111,14 +112,26 @@
 			flickr_photos_lookup_add($photo['id'], $photo['user_id']);
 		}
 
-		flickr_photos_import_photo_files($photo, $more);
+		# See also: lib_flickr_photos_upload.php
+
+		if (! isset($more['donot_import_files'])){
+			flickr_photos_import_photo_files($photo, $more);
+		}
+
+		flickr_photos_import_index_photo($photo, $more);
+
+		# go!
+
+		return okay(array(
+			'photo' => $photo
+		));
+	}
+
+	#################################################################
+
+	function flickr_photos_import_index_photo(&$photo, $more=array()){
 
 		# exif data
-
-		# why did I do this? (20111206/straup)
-		# $more = array(
-		# 	'force' => 1,
-		# );
 
 		if ($hasexif = flickr_photos_exif_has_exif($photo, $more)){
 
@@ -136,24 +149,21 @@
 			}
 		}
 
-		# things that depend on solr (move to a separate function?)
+		# solr (and places)
 
 		if ($GLOBALS['cfg']['enable_feature_solr']){
+
 			flickr_photos_search_index_photo($photo);
-		}
 
-		if (($GLOBALS['cfg']['enable_feature_solr']) && ($GLOBALS['cfg']['enable_feature_places'])){
+			if ($GLOBALS['cfg']['enable_feature_places']){
 
-			if (($photo['woeid']) && ($GLOBALS['cfg']['places_prefetch_data'])){
-				flickr_places_get_by_woeid($photo['woeid']);
+				if (($photo['woeid']) && ($GLOBALS['cfg']['places_prefetch_data'])){
+					flickr_places_get_by_woeid($photo['woeid']);
+				}
 			}
 		}
 
-		# go!
-
-		return okay(array(
-			'photo' => $photo
-		));
+		# note the pass by ref
 	}
 
 	#################################################################
@@ -718,6 +728,7 @@
 	#################################################################
 	
 	function _flickr_photos_import_flickr_urls($photo, $more=array()) {
+
 		$root = "http://farm{$photo['farm']}.static.flickr.com/{$photo['server']}/{$photo['id']}";
 
 		$small = "{$root}_{$photo['secret']}_z.jpg";
