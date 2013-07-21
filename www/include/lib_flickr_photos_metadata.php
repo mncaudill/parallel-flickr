@@ -4,14 +4,12 @@
 
 	#################################################################
 
-	function flickr_photos_metadata_path(&$photo){
+	function flickr_photos_metadata_path(&$photo, $more=array()){
 
-		$root = $GLOBALS['cfg']['flickr_static_path'];
-		$path = flickr_photos_id_to_path($photo['id']) . "/";
-		$fname = "{$photo['id']}_{$photo['originalsecret']}_i.json";
+		$more['abs_path'] = 1;
+		$more['size'] = 'i';
 
-		$meta = $root . $path . $fname;
-		return $meta;
+		return flickr_photos_path($photo, $more);
 	}
 
 	#################################################################
@@ -26,10 +24,6 @@
 		if ($rsp['ok']){
 
 			$meta = flickr_photos_metadata_path($photo);
-
-			# don't look now but we're calling private functions
-	 		# loadlib("flickr_photos_import");
-			# _flickr_photos_import_store($meta, $rsp['data']);
 
 			$cache_key = "photos_meta_{$photo['id']}";
 			cache_unset($cache_key);

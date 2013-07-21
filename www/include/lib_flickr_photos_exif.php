@@ -19,37 +19,57 @@
 
 	#################################################################
 
+	# OMG - please cache me (20130629/straup)
+
 	function flickr_photos_exif_read(&$photo){
 
 		$map = flickr_photos_media_map();
 
 		if ($map[$photo['media']] == 'video'){
-			return not_okay("video does not contain EXIF data");
+			return array('ok' => 0, 'error' => 'video does not contain EXIF data');
 		}
 
-		$fname = "{$photo['id']}_{$photo['originalsecret']}_o.{$photo['originalformat']}";
-		$froot = $GLOBALS['cfg']['flickr_static_path'] . flickr_photos_id_to_path($photo['id']);
-
-		$path = "{$froot}/{$fname}";
+		$path = flickr_photos_path($photo, array('size' => 'o'));
 
 		if (! preg_match("/\.jpe?g$/i", $path)){
-			return not_okay("not a JPEG photo");
+			return array('ok' => 0, 'error' => 'not a JPEG photo');
 		}
 
-		if (! file_exists($path)){
-			return not_okay("original photo not found");
+		if (! storage_file_exists($path, array('boolean' => 1))){
+			return array('ok' => 0, 'error' => 'original photo not found');
 		}
 
-		if (! filesize($path)){
-			return not_okay("original photo is empty");
+		# This is absolutely not awesome but it's what required to 
+		# support the S3 stuff... (20130629/straup)
+
+		$rsp = storage_get_file($path);
+
+		if (! $rsp){
+			return $rsp;
 		}
 
-		# TO DO: cache me?
+		try {
+			$tmpdir = sys_get_temp_dir();
+			$tmpfile = tempnam($tmpdir, "exif-{$photo['id']}");
 
-		$exif = exif_read_data($path);
+			$fh = fopen($tmpfile, 'w');
+			fwrite($fh, stream_get_contents($rsp['fh']));
+			fclose($fh);
+
+			$exif = exif_read_data($tmpfile);
+			unlink($tmpfile);
+		}
+
+		catch (Exception $e){
+			return array('ok' => 0, 'error' => $e);
+		}
+
+		# abs_path is temporary (see above)
+		# $path = flickr_photos_path($photo, array('size' => 'o', 'abs_path' => 1));
+		# $exif = exif_read_data($path);
 
 		if (! $exif){
-			return not_okay("failed to read EXIF data");
+			return array('ok' => 0, 'error' => 'failed to read EXIF data');
 		}
 
 		# TO DO: expand EXIF tag values
@@ -73,8 +93,9 @@
 
 		ksort($exif);
 
-		return okay(array("rows" => $exif));
+		return array('ok' => 1, 'rows' => $exif);
 	}
 
 	#################################################################
-?>
+
+	# the end

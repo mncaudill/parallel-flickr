@@ -1,36 +1,33 @@
 {capture assign="page_title"}{$owner.username} | photos from {$place.name}{if $context} | {$context}{/if}{/capture}
 {include file="inc_head.txt"}
 
-{* TO DO: figure out why safari doesn't honour the .place_map css definition... *}
+<div class="container">
 
 {assign var="zoom" value=$place|@flickr_places_calculate_zoom}
 
-<div class="map place_map" data-provider="{$cfg.slippymap_provider|escape}" data-center="{$place.latitude|escape},{$place.longitude|escape}" data-zoom="{$zoom|escape}" data-hash="false" data-interactive="false" id="map_{$photo.id|escape}" style="width:100%;">
+<h2>
+{if $is_own and $context=='indoors'}
+<a href="{$owner|@flickr_urls_photos_user}">Your</a> indoor photos from {$place.name|escape}
+{elseif $is_own and $context=='outdoors'}
+<a href="{$owner|@flickr_urls_photos_user}">Your</a> outdoor photos from {$place.name|escape}
+{elseif $is_own}
+<a href="{$owner|@flickr_urls_photos_user}">Your</a> photos from {$place.name|escape}
+{elseif $context=='indoors'}
+<a href="{$owner|@flickr_urls_photos_user}">{$owner.username|escape}</a>'s indoor photos from {$place.name|escape}
+{elseif $context=='outdoors'}
+<a href="{$owner|@flickr_urls_photos_user}">{$owner.username|escape}</a>'s outdoor photos from {$place.name|escape}
+{else}
+<a href="{$owner|@flickr_urls_photos_user}">{$owner.username|escape}</a>'s photos from {$place.name|escape}
+{/if}
+</h2>
+
+<div class="map map-place" data-provider="{$cfg.slippymap_provider|escape}" data-center="{$place.latitude|escape},{$place.longitude|escape}" data-zoom="{$zoom|escape}" data-hash="false" data-interactive="false" id="map_{$photo.id|escape}" style="width:100%;height:75px;">
 
 {foreach from=$photos item="photo"}
 	<div class="marker" data-location="{$photo.latitude|escape},{$photo.longitude|escape}">
 		<span class="marker_text">{$photo.datetaken|@flickr_dates_verbosify_iso8601}</span>
 	</div>
 {/foreach}
-
-{* TO DO: write a bloody possess modifier... *}
-
-<h2>
-{if $is_own and $context=='indoors'}
-your indoor photos from {$place.name|escape}
-{elseif $is_own and $context=='outdoors'}
-your outdoor photos from {$place.name|escape}
-{elseif $is_own}
-your photos from {$place.name|escape}
-{elseif $context=='indoors'}
-{$owner.username|escape}'s indoor photos from {$place.name|escape}
-{elseif $context=='outdoors'}
-{$owner.username|escape}'s outdoor photos from {$place.name|escape}
-{else}
-{$owner.username|escape}'s photos from {$place.name|escape}
-{/if}
-</h2>
-
 
 </div>
 
@@ -64,43 +61,15 @@ your photos from {$place.name|escape}
 </ul>
 
 {if $photos|@count}
-{foreach from=$photos item="row"}
 
-<div class="photos_user_photo">
+{include file="inc_flickr_photos_list.txt"}
 
-<div class="photo">
-<a href="{$row|@flickr_urls_photo_page}"><img src="{$row|@flickr_urls_photo_static}" /></a>
-<div class="photo_when">{$row.datetaken|@flickr_dates_verbosify_iso8601}</div>
-</div>
-
-<div class="photo_sidebar" style="margin-top:0px;">
-{include file="inc_flickr_photo_map.txt" photo=$row nozoom=1}
-</div>
-
-<br clear="all" />
-
-</div>
-
-{/foreach}
-
-{include file="inc_pagination.txt"}
-
+{elseif $error}
+	<p class="error label label-warning">Hrmph. There was a problem fetching photos!</p>
 {else}
-
-{if $error}
-	<p class="error">Hrmph. There was a problem fetching photos!</p>
-{else}
-
-{if $is_own}
-<p>You haven't taken any photos here!</p>
-{else}
-<p>{$owner.username|escape} hasn't taken any photos you can see here.</p>
+	<p class="notice label label-info">There aren't any photos to show you here!</p>
 {/if}
 
-{/if}
-
-{/if}
-
-{include file="inc_flickr_photo_map_load.txt"}
+</div>
 
 {include file="inc_foot.txt"}

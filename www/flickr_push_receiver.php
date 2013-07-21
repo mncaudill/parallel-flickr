@@ -8,6 +8,8 @@
 	loadlib("flickr_push_photos");
 	loadlib("flickr_push_utils");
 
+	loadlib("flickr_push_littleprinter");
+
 	loadlib("flickr_backups");
 	loadlib("flickr_users");
 	loadlib("flickr_api");
@@ -74,17 +76,14 @@
 
 	$do_push_backups = features_is_enabled("flickr_push_backups");
 	$is_push_backup = flickr_push_subscriptions_is_push_backup($subscription);
-	$is_backup_user = flickr_backups_is_registered_user($user, "ensure enabled");
+	$is_backup_user = flickr_backups_is_registered_user($user);
 
 	$to_backup = array();
+	$wtf = array();
+
 	$new = 0;
 
 	foreach ($atom->items as $e){
-
-		# for debugging...
-		# $fh = fopen("/tmp/wtf.json", "w");
-		# fwrite($fh, json_encode($e));
-		# fclose($fh);
 
 		# TO DO: check $subscription['topic_id'] here because
 		# at some point if we start to use the push stuff to
@@ -97,6 +96,30 @@
 
 		$photo_id = $m[1];
 		$update_type = (isset($e['flickr']['update@type'])) ? $e['flickr']['update@type'] : '';
+
+		# for debugging...
+		# $fh = fopen("/tmp/wtf.json", "a");
+		# fwrite($fh, "photo: {$photo_id} update: {$update_type}\n");
+		# fwrite($fh, "user: {$flickr_user['nsid']} author: {$e['flickr']['author_nsid']} bacup: {$is_backup_user}\n");
+		# fwrite($fh, "title {$e['media']['category']}\n");
+		# fwrite($fh, "\n---\n");
+		# fclose($fh);
+
+		# See this: It's not ideal but there you go. The push stuff includes neither
+		# the author of a tag nor the description of the photo (I think) so we're going
+		# to filter photos that belong to backup users whose title is 'flickr:push=ignore'
+		# (20130605/straup)
+
+		# TO DO: check update type
+
+		if (($is_backup_user) && ($flickr_user['nsid'] == $e['flickr']['author_nsid'])){
+
+			# TO DO: preg_match ?
+
+			if ($e['title'] == "flickr:push=ignore"){
+				continue;
+			}
+		}
 
 		$photo = array(
 			'photo_id' => $photo_id,
@@ -122,6 +145,9 @@
 			'photo_id' => $photo_id,
 			'photo_data' => $enc_photo,
 		);
+
+		$debug = "user: {$user['id']} topic: {$subscription['topic_id']} photo: {$photo_id}";
+		$wtf[] = $debug;
 
 		$rsp = flickr_push_photos_record($user, $photo_data);
 
@@ -271,7 +297,7 @@
 			$photo = $rsp['rsp']['photo'];
 			$spr = flickr_push_utils_info2spr($photo);
 
-			# log_info("[PUSH] {$topic} ({$user['id']}) start import...");
+			log_info("[PUSH] wtf: {$topic} ({$user['id']}) start import...");
 			# log_info("[PUSH] SPR " . var_export($spr, 1));
 
 			$import_rsp = null;
@@ -286,15 +312,25 @@
 
 			else if ($topic == 'commons'){
 				$import_rsp = flickr_photos_import_photo($spr);
+
+				# $rsp = flickr_push_littleprinter($spr);				
 			}
 
 			else {
 				# log_info("skip photo for '{$user['id']}' : '{$topic}'");
 			}
 
-			# log_info("[PUSH] {$topic} ({$user['id']}) : " . var_export($import_rsp, 1));
+			# log_info("[DUMP] {$topic} ({$user['id']}) : " . var_export($import_rsp, 1));
 		}
 		
+	}
+
+	# log_info("[PUSH] wtf: " . count($wtf));
+
+	if (count($wtf)){
+		# $msg = implode("\n", $wtf);
+		# log_info("[PUSH] wtf: " . $msg);
+		# mail('aaron@aaronland.net', 'parallel-flickr push debug', $msg);
 	}
 
 	exit();

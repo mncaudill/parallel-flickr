@@ -1,0 +1,62 @@
+/*
+  this is here mostly for historical purposes and for if/when I can
+  rebuild the funcitonality that this uses - flickr appears to be staging
+  an unspoken war on faves but there isn't much I can do about that
+  from this side of the fence (20130707/straup)
+*/
+
+#cwf_about {
+    background-color:transparent;
+    min-width:300px;
+    min-height: 300px;
+    max-width: 420px;
+    margin: 60px 50px 0 auto !important;
+    font-size:1.25em;
+    font-weight: 700;
+    color: transparent;
+    line-height:1.25em;
+    text-shadow: 0.1em 0.1em 0.02em #eee;
+}
+
+#cwf_about_text {
+    min-width:300px;
+    max-width: 390px;
+    padding:20px;
+    padding-top:10px;
+    padding-left:10px;
+}
+
+#cwf_about_text a {
+    color: transparent;
+    text-decoration:none;
+}
+
+#cwf_about_text:hover {
+    color: #000 !important;
+    background-color: #eee;
+    opacity:.70;
+}
+
+#cwf_about_text:hover a{
+    color: #000 !important;
+}
+
+#cwf_about img {
+    border: 10px solid #fff;
+    max-width:400px;
+    max-height:400px;
+    opacity: 1 !important;
+}
+
+#cwf_updates a {
+    font-weight: 100;
+}
+
+/* http://revdancatt.com/2012/03/31/the-pxl-effect-with-javascript-and-canvas-and-maths/ */
+
+#backstretch {
+    image-rendering:-moz-crisp-edges;
+    image-rendering: -o-crisp-edges;
+    image-rendering:-webkit-optimize-contrast;
+    -ms-interpolation-mode:nearest-neighbor;
+}

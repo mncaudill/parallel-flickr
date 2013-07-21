@@ -177,10 +177,10 @@
 
 	function flickr_photos_import_photo_files(&$photo, $more=array()){
 		
-		if ($GLOBALS['cfg']['enable_feature_storage_s3']) {
-			return flickr_photos_import_photo_files_s3($photo, $more);
-		}
-
+		# TO DO: make things work with storage_s3 – specifically
+		# no prefix (nested directories) for S3 thingies
+		# (20130624/straup)
+	
 		$root = "http://farm{$photo['farm']}.static.flickr.com/{$photo['server']}/{$photo['id']}";
 
 		$small = "{$root}_{$photo['secret']}_z.jpg";
@@ -208,18 +208,15 @@
 			$orig = "http://www.flickr.com/photos/{$nsid}/{$photo['id']}/play/{$video}";
 		}
 
-		#
+		# Note the relative paths – the parent tree is meant to be handled by
+		# lib_storagemaster (20130528/straup)
 
-		$path = $GLOBALS['cfg']['flickr_static_path'] . flickr_photos_id_to_path($photo['id']);
+		$dirname = flickr_photos_dirname($photo);
 
-		if (! file_exists($path)){
-			mkdir($path, 0755, true);
-		}
+		$local_small = $dirname . basename($small);
+		$local_orig = $dirname . basename($orig);
 
-		#
-
-		$local_small = "{$path}/" . basename($small);
-		$local_orig = "{$path}/" . basename($orig);
+		# TO DO: use flickr_photos_basename(...)
 
 		$local_info = str_replace("_o.{$photo['originalformat']}", "_i.json", $local_orig);
 		$local_comments = str_replace("_o.{$photo['originalformat']}", "_c.json", $local_orig);
@@ -231,11 +228,14 @@
 
 		$req = array();
 
-		if (($more['force']) || (! file_exists($local_small))){
+		$small_exists = storage_file_exists($local_small);
+		$orig_exists = storage_file_exists($local_orig);
+
+		if (($more['force']) || (! $small_exists['ok'])){
 			$req[] = array($small, $local_small);
 		}
 
-		if (($more['force']) || (! file_exists($local_orig))){
+		if (($more['force']) || (! $orig_exists['ok'])){
 
 			# see above
 
@@ -313,96 +313,7 @@
 			_flickr_photos_import_fetch_multi($req);
 		}
 
-	}
-	
-	#################################################################
-	
-	function flickr_photos_import_photo_files_s3(&$photo, $more=array()){
-
-		loadlib('storage_s3');
-		
-		$flickr_urls = _flickr_photos_import_flickr_urls($photo, $more);
-		
-		$orig  = storage_s3_path_photo($photo, 'o', $more);
-		$small = storage_s3_path_photo($photo, 'z', $more);
-
-		$req = array();
-		$meta = array();
-		
-		if (($more['force']) || ( ! storage_s3_file_exists($small))) {
-			$req[] = $flickr_urls['small'];
-		}
-
-		if (($more['force']) || ( ! storage_s3_file_exists($orig))) {
-			log_debug('flickr', "flickr orig: " . $flickr_urls['orig']);
-			$req[] = $flickr_urls['orig'];
-		} 
-
-		$info = str_replace("_o.{$photo['originalformat']}", "_i.json", $orig);
-		$comments = str_replace("_o.{$photo['originalformat']}", "_c.json", $orig);
-
-		if (! isset($more['skip_meta'])) {
-			$meta = _flickr_photos_import_flickr_meta_urls($photo, $more); 
-			
-			foreach($meta as $k => $v) {
-				$req[] = $v;
-			}
-		}
-		
-		# now go!
-
-		# fetch all the bits using http_multi()
-		
-		log_debug('import', "multi-fetch count: " . count($req));
-		
-		if ($count = count($req)){
-			
-			list($multi, $failed) = _flickr_photos_import_do_fetch_multi($req);
-		}
-		
-		log_debug('import', "fetch success count: " . count($multi));
-		
-		foreach ($multi as $rsp) {
-			log_debug('import', "ok: " . $rsp['url']);
-		}
-		foreach ($failed as $rsp) {
-			log_debug('import', "failed: " . $rsp['url']);
-		}
-		
-
-		loadlib('mime_type');
-
-		$sent = array();
-
-		foreach ($multi as $rsp) {
-			$id = '';
-			
-			if ($rsp['url'] == $flickr_urls['orig']) {
-				$id = $orig;
-			} elseif ($rsp['url'] == $flickr_urls['small']) {
-				$id = $small;
-	        } elseif ($rsp['url'] == $meta['info']) {
-				$id = $info;
-				$more['type'] = 'application/json';
-			} elseif ($rsp['url'] == $meta['comments']) {
-				$id = $comments;
-				$more['type'] = 'application/json';
-			}
-			
-			if ($id) {
-				$sent[] = storage_s3_file_store($id, $rsp['body'], $more);
-			}
-		}
-		
-		foreach ($sent as $rsp) {
-			if ($rsp['ok']) {
-				log_debug('s3', 'ok put ' . $rsp['url']);
-			} else {
-				log_debug('s3', 'failed put ' . $rsp['url']);
-			}
-		}
-
-	}
+	}	
 
 	#################################################################
 
@@ -428,7 +339,7 @@
 
 			list($remote, $local) = $_req;
 
-			log_info("{$local} : {$_rsp['ok']}");
+			log_info("{$local} ({$remote}): {$_rsp['ok']}");
 
 			if (! $_rsp['ok']){
 
@@ -474,8 +385,17 @@
 				$data = $_rsp['body'];
 			}
 
-			_flickr_photos_import_store($local, $data);
-			log_info("wrote {$local}");
+			# This is necessary (at least) until we are using the
+			# storagemaster_file_exists functions, above.
+			# (20130527/straup)
+
+			# $strg_local = str_replace($GLOBALS['cfg']['flickr_static_path'], "", $local);
+			# log_info("store as {$strg_local}");
+			# $strg_rsp = storage_put_file($strg_local, $data);
+
+			$strg_rsp = storage_put_file($local, $data);
+
+			log_info("wrote {$local} : {$strg_rsp['ok']}");
 		}
 
 		if ((count($failed)) && ($retries)){
@@ -575,43 +495,6 @@
 		return okay(array(
 			'count_imported' => $imported,
 		));
-	}
-
-	#################################################################
-
-	function _flickr_photos_import_store($path, &$bits){
-
-		$fh = fopen($path, "w");
-
-		if (! $fh){
-			log_info("failed to create filehandle for '{$path}'");
-			return 0;
-		}
-
-		fwrite($fh, $bits);
-		fclose($fh);
-
-		# The perms dance (ensuring that all files are group writable
-		# is necessary if we're doing push-based backups since when a
-		# push update comes through the web server needs to be able to
-		# write (or update) the file. But we also need to be able to
-		# write (or update) files using the backup scripts in the bin
-		# directory. Good times. (20120607/straup)
-
-		$do_perms_dance = features_is_enabled(array('flickr_push', 'flickr_push_backups'));
-
-		if ($do_perms_dance){
-
-			$stat = stat($path);
-			$owner = $stat['uid'];
-			$whoami = getmyuid();
-
-			if ($whoami == $owner){
-				chmod($path, 0664);
-			}
-		}
-
-		return 1;
 	}
 
 	#################################################################

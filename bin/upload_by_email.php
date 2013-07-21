@@ -5,7 +5,7 @@
 
 	include("include/init.php");
 
-	loadlib("flickr_photos_upload");
+	loadlib("photos_upload");
 	loadlib("flickr_users");
 	loadlib("flickr_backups");
 
@@ -27,12 +27,21 @@
 	$parser->setStream(STDIN);  
 
 	$to = $parser->getHeader('to');  
+	$from = $parser->getHeader('from');  
 
 	if (! preg_match($re, $to, $m)){
 		log_rawr("failed to parse upload by email address");
 	}
 
 	$addr = $m[1];
+
+	# TO DO: formalize this in to some kind of upload-by-email
+	# logging/debugging system that can be toggled as needed.
+	# (20130530/straup)
+
+	# $fh = fopen("/tmp/upload-by-email.wtf", "a");
+	# fwrite($fh, "TO: {$to} ({$addr})");
+	# fclose($fh);
 
 	$user = users_get_by_uploadbyemail_address($addr);
 
@@ -53,12 +62,6 @@
 		log_rawr("not a registered backup user");
 	}
 
-	$flickr_user = flickr_users_get_by_user_id($user['id']);
-
-	if (! flickr_users_has_token_perms($flickr_user, "write")){
-		log_rawr("user has insufficient token perms");
-	}
-
 	$attachments = $parser->getAttachments();
 
 	if (! count($attachments)){
@@ -66,12 +69,52 @@
 	}
 
 	$subject = $parser->getHeader('subject');  
+
+	# 'f' is for filter, as in 'f:pxl'
+	# 'p' is for 'permissions', as in 'p:ff'
+	# 'g' is for 'geo permissions', as in 'g:c'
+	# 'n' is for 'notify <service>', as in 'n:flickr;twitter'
+	# 's' is for 'send to', as in 's:fl'
+
 	$filtr = null;
+	$perms = null;
+	$geoperms = null;
+	$send_to = null;
+	$notify = null;
 
 	if (preg_match("/(\s?f:([a-z]+))/i", $subject, $m)){
 		$filtr = $m[2];
 		$subject = str_replace($m[1], "", $subject);
 	}
+
+	if (preg_match("/(\s?p:([a-z]+))/i", $subject, $m)){
+		$perms = $m[2];
+		$subject = str_replace($m[1], "", $subject);
+	}
+
+	if (preg_match("/(\s?g:([a-z]+))/i", $subject, $m)){
+		$geoperms = $m[2];
+		$subject = str_replace($m[1], "", $subject);
+	}
+
+	if (preg_match("/(\s?s:([a-z]+))/i", $subject, $m)){
+		$send_to = $m[2];
+		$subject = str_replace($m[1], "", $subject);
+	}
+
+	if (preg_match("/(\s?n:([a-z;]+))/i", $subject, $m)){
+		$notify = $m[2];
+		$subject = str_replace($m[1], "", $subject);
+	}
+
+	$send_to = photos_upload_resolve_sendto($send_to);
+	$notify = photos_upload_resolve_notifications($notify);
+
+	# $rsp = photos_upload_can_upload($user, $send_to);
+	# dumper($rsp);
+
+	$subject = trim($subject);
+	$title = sanitize($subject, 'str');
 
 	$uploads = array();
 
@@ -131,24 +174,29 @@
 	foreach ($uploads as $path){
 
 		$args = array(
-			'http_timeout' => 60
+			'http_timeout' => 60,
+			'perms' => $perms,
+			'geoperms' => $geoperms,
+			'title' => $title,
+			'send_to' => $send_to,
+			'notify' => $notify,
 		);
 
 		if (($filtr) && features_is_enabled("uploads_filtr")){
 			$args['filtr'] = $filtr;
 		}
 
-		$rsp = flickr_photos_upload($user, $path, $args);
-
-		# THROW AN ERROR ?
+		$rsp = photos_upload($user, $path, $args);
 
 		if (! $rsp['ok']){
+
+			$fh = fopen("/tmp/upload-by-email.wtf", "a");
+			fwrite($fh, var_export($rsp, 1));
+			fclose($fh);
 
 			echo "failed to upload '{$path}' : {$rsp['error']}";
 			continue;
 		}
-
-
 	}
 
 	foreach ($uploads as $path){

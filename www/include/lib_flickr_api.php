@@ -31,12 +31,18 @@
 
 	#################################################################
 
-	function flickr_api_auth_url($perms, $extra=null){
+	function flickr_api_auth_url($perms, $extra=null, $frob=null){
 
 		$args = array(
 			'api_key' => $GLOBALS['cfg']['flickr_api_key'],
 			'perms' => $perms,
 		);
+
+		# OH GOD... fix me...
+
+		if ($frob){
+			$args['frob'] = $frob;
+		}
 
 		if ($extra){
 
@@ -54,6 +60,24 @@
 	#################################################################
 
 	function flickr_api_call_build($method, $args=array(), $more=array()){
+
+		# untested (20130627/straup)
+
+		if ((0) && ($GLOBALS['cfg']['flickr_api_use_oauth_bridge'])){
+
+			$GLOBALS['cfg']['flickr_api_key'] = $GLOBALS['cfg']['flickr_oauth_key'];
+			$GLOBALS['cfg']['flickr_api_key'] = $GLOBALS['cfg']['flickr_oauth_secret'];
+
+			if (isset($args['auth_token'])){
+
+				$flickr_user = flickr_users_get_by_auth_token($args['auth_token']);
+				$more['user_key'] = $flickr_user['oauth_token'];
+				$more['user_secret'] = $flickr_user['oauth_secret'];
+			}
+
+			loadlib("flickr_api_oauth");
+			return flickr_api_oauth_call($method, $args, $more);
+		}
 
 		$args['api_key'] = $GLOBALS['cfg']['flickr_api_key'];
 

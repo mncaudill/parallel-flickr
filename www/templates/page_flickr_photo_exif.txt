@@ -1,14 +1,17 @@
+{capture assign="photo_title"}{if $photo.title}{$photo.title}{else}(Untitled){/if}{/capture}
+{capture assign="page_title"}{$photo.owner.username} | {$photo_title} | EXIF data{/capture}
 {include file="inc_head.txt"}
-
-<h2>EXIF data for <a href="{$photo|@flickr_urls_photo_page}">{if $photo.title}<q>{$photo.title|escape}</q>{else}photo ID #{$photo.id|escape}{/if}</a></h2>
 
 {if $exif}
 
-<div style="float:right; margin-right:10%;">
-<a href="{$photo|@flickr_urls_photo_page}"><img src="{$photo|@flickr_urls_photo_static}" alt="{$photo.title|escape}" width="300"/></a>
-</div>
+<div class="photo_container container-fluid">
 
-<table class="photo_exif">
+<h2 class="offset1">EXIF data for <a href="{$photo|@flickr_urls_photo_page}">{if $photo.title}<q>{$photo.title|escape}</q>{else}photo ID #{$photo.id|escape}{/if}</a></h2>
+
+ <div class="row-fluid">
+ <div class="span5 offset2">
+
+<table class="table photo_exif">
 
 {foreach from=$exif item="value" key="tag"}
 	{if $tag=='COMPUTED' or $tag=='THUMBNAIL' or $tag == 'SectionsFound' or $tag=='MakerNote'}
@@ -17,9 +20,9 @@
 	<tr>
 		<td class="photo_exif_tag"><strong>{$tag|escape}</strong></td>
 		<td>
-		{if $cfg.enable_feature_solr}
-			{if $tag=='Make'}<a href="">{$value|escape}</a>
-			{elseif $tag=='Model'}<a href="">{$value|escape}</a>
+		{if "solr"|@features_is_enabled}
+			{if $tag=='Make'}<a href="{$photo.owner|@flickr_urls_photos_user}cameras/{$value|escape}/">{$value|escape}</a>
+			{elseif $tag=='Model'}<a href="{$photo.owner|@flickr_urls_photos_user}cameras/{$exif.Make|escape}/{$value|escape}/">{$value|escape}</a>
 			{else}{$value|escape}{/if}
 		{else}{$value|escape}{/if}
 	</tr>
@@ -28,9 +31,19 @@
 {/foreach}
 
 </table>
+	</div>
+	<div class="span3 offset1">
+	<a href="{$photo|@flickr_urls_photo_page}"><img src="{$photo|@flickr_urls_photo_static}" alt="{$photo.title|escape}" width="300"/></a>
+	</div>
+
+</div>
+	</div>
 
 {else}
-<p class="error">There is no EXIf data for this photo. The robot squirrels report: {$error|escape}.</p>
+<div class="container">
+<p class="label label-warning error">There is no EXIf data for this photo. The robot squirrels report: {$error|escape}.</p>
+</div>
+
 {/if}
 
 {include file="inc_foot.txt"}

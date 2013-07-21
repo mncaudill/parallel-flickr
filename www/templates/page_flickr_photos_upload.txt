@@ -1,16 +1,22 @@
 {capture assign="page_title"}upload{/capture}
+{capture assign="extra_head"}
+<link rel="stylesheet" type="text/css" href="{$cfg.abs_root_url}css/photos-upload.source.css" />
+{/capture}
 {include file="inc_head.txt"}
 
+<div class="container">
 <h2>Upload a photo</h2>
 
 {if !$is_registered}
 
-<p>Sorry. This feature is only available to registered <q>backup</q> users of
+<p class="label label-info">Sorry. This feature is only available to registered <q>backup</q> users of
 the site.</p>
 
 {elseif !$can_upload}
 
-<p>Okay, you're almost ready to upload photos to Flickr. By default
+<p class="label label-info">Okay, you're almost ready to upload photos to Flickr.</p>
+
+<p>By default
 <strong>{$cfg.site_name|escape}</strong> only needs to have an authentication
 token for your Flickr account ({$cfg.user.username|escape}) with <q>read</q>
 permissions. In order to upload photos we'll need to bounce you back through the
@@ -21,25 +27,155 @@ Flickr website site so you can confirm that you're okay with
 
 {else}
 
-<form id="upload" method="POST" enctype="multipart/form-data">
+<div id="upload-status"></div>
+
+<div class="span10 offset1">
+
+<form method="POST" enctype="multipart/form-data" id="upload-form">
+
+      <div class="upload-sect">
+        <span class="upload-opt">
+	<label for="photo"><span class="upload-what">Upload</span></label>
 	<input type="file" name="photo" id="photo" data-crumb="{$crumb|escape}" />
-	<input type="submit" value="UPLOAD" />
+	</span>
+
+      </div>
+	
+      <div class="upload-sect">
+        <span class="upload-opt">
+	<label for="perms">This photo will be able to be <span class="upload-what">seen</span> by</label>
+	<select name="perms" id="perms">
+		<option value="">just you</option>
+		<option value="p">anyone</option>
+		<option value="ff">friends + family</option>
+		<option value="fr">friends</option>
+		<option value="fa">family</option>
+	</select>
+	</span>
+
+        <span class="upload-opt">
+	<label for="perms">and its <span class="upload-what">location</span> data will be available to</label>
+	<select name="geoperms" id="geoperms">
+		<option value="">only you</option>
+		<option value="p">anyone</option>
+		<option value="c">contacts</option>
+		<option value="ff">friends + family</option>
+		<option value="fr">friends</option>
+		<option value="fa">family</option>
+	</select>
+	</span>
+
+	</div>
+
+	<div class="upload-sect">
+        <span class="upload-opt">
+	<span id="upload-details-prompt">
+	<label for="upload-details-button">Keep it simple for now or </label>
+	<button id="upload-details-button" class="upload-what">SWEAT THE DETAILS</button>
+	</span>
+
+	</div>
+
+        <div id="upload-details"">
+
+	<div class="upload-sect">
+        <span class="upload-opt">
+	<label for="title"><span class="upload-what">Name</span> this photo</label>
+	<input type="text" name="title" id="title" />
+	</span>
+
+	</div>
+
+	<div class="upload-sect">
+
+	{if "uploads_filtr"|@features_is_enabled}
+        <span class="upload-opt">
+	<label for="filtr">This photo will be <span class="upload-what">filtr</span>-ed using</label>
+	<select name="filtr" id="filtr">
+		<option value="">nothing but its inate beauty</option>
+	{foreach from=$filtrs item="filtr"}
+		<option value="{$filtr|escape}">{$filtr|escape}</option>
+	{/foreach}
+	</select>
+	</span>
+	{/if}
+
+	<span class="upload-opt">
+	{if "uploads_filtr"|@features_is_enabled}
+	<label for="destination">and will be <span class="upload-what">sent</span> to</label>
+	{else}
+	<label for="destination">This photo will be <span class="upload-what">sent</span> to</label>
+	{/if}
+	<select name="send_to" id="send_to">
+		<option value="">...please tell me?</option>
+		<option value="pf"{if $cfg.uploads_default_send_to=='parallel-flickr'} selected="true"{/if}>parallel-flickr</option>
+		<option value="fl"{if $cfg.uploads_default_send_to=='flickr'} selected="true"{/if}>flickr</option>
+	</select>
+	</span>
+	</div>
+
+	{* this will all need to be re-thought once there's more than *}
+	{* one service to notify... (20130706/straup) *}
+
+	{if "uploads_flickr_notifications"|@features_is_enabled}
+
+	<div class="upload-sect">
+
+	<span class="upload-opt">
+	<select name="notify" id="notify" multiple size="2">
+		<option value=""{if $cfg.uploads_default_notifications==''} selected="true"{/if}>No one</option>
+		<option value="fl"{if $cfg.uploads_default_notifications=='flickr'} selected="true"{/if}>Flickr</option>
+	</select>
+
+	<label for="destination">will be told about your new upload.</label>
+	</span>
+
+	</div>
+
+	{/if}
+
+	</div>
+
+	<div class="upload-sect">
+	<span class="upload-opt">
+	<input type="submit" value="MAKE IT SO!" />
+	</span>
+	</div>
+
 </form>
+</div>
 
 {/if}
+
+</div>
 
 <script type="text/javascript">
 {literal}
 
 $(document).ready(function(){
 
-	$("#upload").submit(function(){
+	$("#upload-details-button").click(function(){
+		$("#upload-details").show();
+		$("#upload-details-prompt").hide();
+		return false;
+	});
+
+	$("#upload-form").submit(function(){
+
+	/* TO DO: use parallel.flickr.api.js */
 
 		var data = new FormData();
-		data.append("method", "flickr.photos.upload");
+		data.append("method", "parallel.flickr.photos.upload");
 
-		var crumb = $("#photo").attr("data-crumb");
-		data.append("crumb", crumb);
+		data.append("crumb", $("#photo").attr("data-crumb"));
+		data.append("access_token", parallel_flickr_api_site_token());
+
+		data.append("title", $("#title").val());
+		data.append("perms", $("#perms").val());
+		data.append("geoperms", $("#geoperms").val());
+		data.append("filtr", $("#filtr").val());
+		data.append("send_to", $("#send_to").val());
+		data.append("notify", $("#notify").val().join(","));
 
 		/* sudo account for multiple photos... */
 
@@ -50,28 +186,83 @@ $(document).ready(function(){
 		}
 
 		catch(e){
-			console.log(e);
+
+			$("#upload-status").html("Hrm, there was a problem uploading your photo: " + e);
+			$("#upload-status").show();
+
+			// console.log(e);
 			return false;
 		}
 
+		var onsuccess = function(rsp){
+			console.log(rsp);
+			var msg = '';
+
+			if (rsp['stat'] == 'ok'){
+				if (rsp['photo']){
+					var link = '<a href="' + rsp['photo']['url'] + '">' + rsp['photo']['id'] + '</a>';
+
+					msg = '<span class="label label-success">';
+					msg += 'Yay! Your photo has been successfull uploaded with ID '	+ link + '.';
+					msg += '</span>';
+				}
+
+				else {
+					msg = '<span class="label label-warning">';
+					msg += "Hrm... your upload succeeded by the server returned a message we don't understand";
+					msg += '</span>';
+				}
+			}
+
+			else {
+				msg = '<span class="label label-warning">';
+				msg += "Ack! There was a problem uploading your photo: " + rsp['error']['error'];	
+				msg += '</span>';
+			}
+
+			var status = '<p>' + msg + '</p>';
+			status += '<button onclick="$(\'#upload-status\').hide();$(\'#upload-form\').show();">Upload another photo.</button>';
+
+			$("#upload-status").html(status);
+			$("#upload-status").show();
+		};
+
+		var dt = new Date();
+		var ts = dt.getTime();
+
+		
 		$.ajax({
-			url: "/api",
+			url: "/api/rest?cb=" + ts,
 			type: "POST",
 			data: data,
 			cache: false,
 			contentType: false,
 			processData: false,
 			dataType: "json",
-			error: function(rsp){
-				console.log(rsp);
+			error: function(e){
+				console.log(e);
+				$("#upload-status").html(e);
+				$("#upload-status").show();
 			},
 			success: function(rsp){
-				console.log(rsp);
-				$('input[type=submit]').removeAttr('disabled');
+
+				try {
+					onsuccess(rsp);
+				}
+
+				catch(e){
+					console.log(rsp);
+					console.log(e);
+				}
 			}
 		});
 
-		$('input[type=submit]').attr('disabled', 'disabled');
+		$("#upload-form").hide();
+
+		$("#upload-status").html('<span class="label label-info">Okee dokee...uploading your photo. Tasteful muzak plays.</span>');
+		$("#upload-status").show();
+
+		//  $('input[type=submit]').attr('disabled', 'disabled');
 		return false;
 	});
 });

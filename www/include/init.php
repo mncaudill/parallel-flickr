@@ -103,6 +103,12 @@
 
         if ($parent_dirname = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/')){
 
+		# For when we are run from the command-line
+		# (20130605/straup)
+
+		$pf_root = dirname(dirname(dirname(__FILE__)));
+		$parent_dirname = str_replace($parent_dirname, $pf_root, "");
+
 		$parts = explode("/", $parent_dirname);
 		$cwd = implode("/", array_slice($parts, 1));
 
@@ -228,8 +234,32 @@
 	loadlib('sanitize');
 	loadlib('filter');
 
+	# TO DO: read from config (20130527/straup)
+
+	loadlib("flickr_backups");
+
+	loadlib('storage');
+	storagemaster_init();
+
 	if ($this_is_webpage){
-		login_check_login();
+
+	        login_check_login();
+
+	        # API site key/token stuff
+
+		if (features_is_enabled("api")){
+
+                        loadlib("api");
+
+		        if (features_is_enabled(array("api_site_keys", "api_site_tokens"))){
+
+				loadlib("api_keys");
+				loadlib("api_oauth2_access_tokens");
+
+				$token = api_oauth2_access_tokens_fetch_site_token($GLOBALS['cfg']['user']);
+				$GLOBALS['smarty']->assign_by_ref("site_token", $token['access_token']);
+			}
+		}
 	}
 
 	#

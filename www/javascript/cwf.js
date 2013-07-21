@@ -118,11 +118,10 @@ function cwf_init_subscription(){
 
 	setTimeout(function(){
 
-		$.ajax({
-			url: '/api',
-			data: {	'method': 'flickr.photos.friends.faves'	},
-			success: callback
-		});
+		var method = 'flickr.photos.friends.faves';
+		var args = {};
+
+		parallel_flickr_api_call(method, args, callback);
 
 	}, delay);
 }
@@ -230,11 +229,13 @@ function cwf_init_shortcuts(){
 		preventDefaultEvents: true
 	});
 
+    /*
 	$.shake({
 		callback: toggle_automatic,
 		shakethreshold: 5,
 		debounce: 1000,
 	});
+     */
 }
 
 function cwf_schedule_check_photos(older_than){
@@ -243,18 +244,18 @@ function cwf_schedule_check_photos(older_than){
 
 	setTimeout(function(){
 
-		$.ajax({
-			url: '/api',
-			data: {
-				'method': 'flickr.photos.friends.faves',
-				'older_than': older_than
-			},
-			success: cwf_check_photos_callback,
-			error: function(e){
-				console.log(e);
-				cwf_schedule_check_photos(older_than);
-			}
-		});
+		var method = 'flickr.photos.friends.faves';
+
+		var args = {
+			'older_than': older_than
+		};
+
+		var onerror = function(e){
+			console.log(e);
+			cwf_schedule_check_photos(older_than);
+		};
+
+		parallel_flickr_api_call(method, args, cwf_check_photos_callback, onerror);
 
 	}, delay);
 }

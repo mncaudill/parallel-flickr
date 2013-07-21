@@ -1,0 +1,9 @@
+{if $is_own and $stacked or $smarty.get.stacked}
+{include file="inc_flickr_photos_list_stacked.txt photos=$photos}
+{else}
+{include file="inc_flickr_photos_list_thumbs.txt photos=$photos}
+{/if}
+
+<div class="container" style="text-align:center;margin-top:-3em;">
+{include file="inc_pagination.txt"}
+</div>

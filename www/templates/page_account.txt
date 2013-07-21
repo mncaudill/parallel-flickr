@@ -1,7 +1,8 @@
 {assign var="page_title" value="Your account"}
 {include file="inc_head.txt"}
 
-<h1>Your account</h1>
+<div class="container">
+<h2>Your account</h2>
 
 {if $smarty.get.password}<p class="message">Your password has been updated.</p>{/if}
 
@@ -14,6 +15,12 @@
 	<li><a href="{$cfg.abs_root_url}account/flickr/backups/">Configure your Flickr backups</a></li>
 {/if}
 
+{if "uploads_by_email"|@features_is_enabled}
+	<li><a href="{$cfg.abs_root_url}account/uploadbyemail/">Configure your upload by email settings </a></li>
+{/if}
+
 </ul>
+
+</div>
 
 {include file="inc_foot.txt"}

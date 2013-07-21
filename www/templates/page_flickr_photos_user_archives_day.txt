@@ -1,6 +1,8 @@
 {capture assign="page_title"}{$owner.username} | archives | {$context} | {$year} | {$months.$month|strtolower} | {$day}{/capture}
 {include file="inc_head.txt"}
 
+<div class="container">
+
 <h2>
 {if $is_own}
 {if $context=='posted'}Photos you posted on {$months.$month|escape} {$day|escape}, {$year|escape}{else}Photos you took on {$months.$month|escape} {$day|escape}, {$year|escape}{/if}
@@ -29,37 +31,8 @@
 
 </div>
 
-{if ! $photos|@count}
-<p>None!</p>
-{else}
-
-{foreach from=$photos item="row"}
-
-<div class="photos_user_photo">
-
-<div class="photo">
-<a href="{$row|@flickr_urls_photo_page}"><img src="{$row|@flickr_urls_photo_static}" /></a>
-<div class="photo_when">{$row.datetaken|@flickr_dates_verbosify_iso8601}</div>
-</div>
-
-<div class="photo_sidebar" style="margin-top:0px;">
-{include file="inc_flickr_photo_map.txt" photo=$row}
-</div>
-
-<br clear="all" />
+{include file="inc_flickr_photos_list.txt" photos=$photos}
 
 </div>
-
-{/foreach}
-
-{include file="inc_pagination.txt"}
-
-{if $cfg.enable_keyboard_browse}
-{include file="inc_keyboard_browse.txt" class_name="photo"}
-{/if}
-
-{include file="inc_flickr_photo_map_load.txt"}
-
-{/if}
 
 {include file="inc_foot.txt"}

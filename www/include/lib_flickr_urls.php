@@ -5,52 +5,51 @@
 
 	#################################################################
 
+	function flickr_urls_photo_static_root(){
+
+		if ($GLOBALS['cfg']['storage_provider'] == 's3'){
+			$bucket = storage_s3_bucket();
+			$root = s3_get_bucket_url($bucket);
+		}
+
+		else {
+			$root = $GLOBALS['cfg']['abs_root_url'] . $GLOBALS['cfg']['flickr_static_url'];
+		}
+
+		return $root;
+	}
+
+	#################################################################
+
 	function flickr_urls_photo_thumb_flickr(&$photo){
+
+		if (! $photo['farm']){
+			return flickr_urls_photo_static($photo, array('size' => 't'));
+		}
+
 		return "http://farm{$photo['farm']}.static.flickr.com/{$photo['server']}/{$photo['id']}_{$photo['secret']}_t.jpg";
 	}
 
 	#################################################################
 
-	function flickr_urls_photo_static(&$photo){
-
-		if ($GLOBALS['cfg']['enable_feature_storage_s3']) {
-			loadlib('storage_s3');
-			return storage_s3_url_photo($photo);
-		}
-		
-		# else 
-		
-		$secret = $photo['secret'];
-		$sz = "z";
-		$ext = "jpg";
-
-		$root = $GLOBALS['cfg']['abs_root_url'] . $GLOBALS['cfg']['flickr_static_url'];
-		$path = flickr_photos_id_to_path($photo['id']);
-		$fname = "{$photo['id']}_{$secret}_{$sz}.{$ext}";
-
-		return $root . $path . "/" . $fname;
-		
-		
+	function flickr_urls_photo_original(&$photo){
+		return flickr_urls_photo_static($photo, array('size' => 'o'));
 	}
 
 	#################################################################
 
-	function flickr_urls_photo_original(&$photo){
-		
-		if ($GLOBALS['cfg']['enable_feature_storage_s3']) {
-			loadlib('storage_s3');
-			return storage_s3_url_photo($photo, 'o');
-		}
-		
-		$secret = $photo['originalsecret'];
-		$sz = "o";
-		$ext = $photo['originalformat'];
+	function flickr_urls_photo_static(&$photo, $more=array()){
 
-		$root = $GLOBALS['cfg']['abs_root_url'] . $GLOBALS['cfg']['flickr_static_url'];
-		$path = flickr_photos_id_to_path($photo['id']);
-		$fname = "{$photo['id']}_{$secret}_{$sz}.{$ext}";
+		$defaults = array(
+			'size' => 'z',
+		);
 
-		return $root . $path . "/" . $fname;
+		$more = array_merge($defaults, $more);
+
+		$root = flickr_urls_photo_static_root();
+		$path = flickr_photos_path($photo, $more);
+
+		return $root . $path;
 	}
 
 	#################################################################
@@ -77,10 +76,30 @@
 
 	function flickr_urls_photo_page_flickr(&$photo){
 
+		if (! flickr_photos_is_on_flickr($photo)){
+			return;
+		}
+
 		$user = users_get_by_id($photo['user_id']);
 		$root = flickr_urls_photos_user_flickr($user);
 
 		return $root . "{$photo['id']}/";
+	}
+
+	#################################################################
+
+	# this appears to not be working... (20130603/straup)
+
+	function flickr_urls_photo_page_flickr_short(&$photo){
+
+		if (! flickr_photos_is_on_flickr($photo)){
+			return;
+		}
+
+		loadlib("base58");
+
+		$code = base58_encode($photo['id']);
+		return "http://flic.kr/p/{$code}/";
 	}
 
 	#################################################################
@@ -167,7 +186,7 @@
 
 	#################################################################
 
-	function flickr_urls_faves_user(&$user, $by_user=null){
+	function flickr_urls_faves_user($user, $by_user=null){
 
 		$url = flickr_urls_photos_user($user) . "faves/";
 
